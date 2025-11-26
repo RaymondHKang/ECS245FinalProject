@@ -1,0 +1,81 @@
+import os
+import numpy as np
+import torch
+import tensorflow as tf
+
+from utils.reproducibility import load_yaml_config, set_global_seed
+from utils.compare_outputs import summarize_output_diff
+from models.torch_mlp import TorchMLP
+from models.tf_mlp import create_tf_mlp
+
+
+def align_weights_and_save(
+    torch_model: TorchMLP,
+    tf_model: tf.keras.Model,
+    weights_path: str,
+):
+    """Copy TF weights into PyTorch model and save them to an .npz file."""
+    tf_weights = tf_model.get_weights()
+    state_dict = torch_model.state_dict()
+    state_dict["fc1.weight"] = torch.from_numpy(tf_weights[0].T)
+    state_dict["fc1.bias"] = torch.from_numpy(tf_weights[1])
+    state_dict["fc2.weight"] = torch.from_numpy(tf_weights[2].T)
+    state_dict["fc2.bias"] = torch.from_numpy(tf_weights[3])
+    torch_model.load_state_dict(state_dict)
+
+    os.makedirs(os.path.dirname(weights_path), exist_ok=True)
+    np.savez(
+        weights_path,
+        tf_w0=tf_weights[0],
+        tf_b0=tf_weights[1],
+        tf_w1=tf_weights[2],
+        tf_b1=tf_weights[3],
+    )
+
+
+def main():
+    cfg = load_yaml_config("config/settings.yaml")
+    set_global_seed(cfg["seed"])
+
+    model_cfg = cfg["model"]
+    data_cfg = cfg["data"]
+    weights_cfg = cfg["weights"]
+
+    input_dim = model_cfg["input_dim"]
+    hidden_dim = model_cfg["hidden_dim"]
+    output_dim = model_cfg["output_dim"]
+    batch_size = data_cfg["batch_size"]
+
+    tf_model = create_tf_mlp(input_dim, hidden_dim, output_dim)
+    torch_model = TorchMLP(input_dim, hidden_dim, output_dim)
+
+    align_weights_and_save(
+        torch_model,
+        tf_model,
+        weights_cfg["synced_weights_path"],
+    )
+
+    # synthetic input (also save to file once)
+    os.makedirs(os.path.dirname(data_cfg["synthetic_inputs_path"]), exist_ok=True)
+    if not os.path.exists(data_cfg["synthetic_inputs_path"]):
+        x_np = np.random.rand(batch_size, input_dim).astype(np.float32)
+        np.save(data_cfg["synthetic_inputs_path"], x_np)
+    else:
+        x_np = np.load(data_cfg["synthetic_inputs_path"])
+
+    x_torch = torch.from_numpy(x_np)
+    x_tf = tf.convert_to_tensor(x_np)
+
+    torch_out = torch_model(x_torch).detach().numpy()
+    tf_out = tf_model(x_tf).numpy()
+
+    summary = summarize_output_diff(torch_out, tf_out)
+
+    print("=== Forward Output Comparison (PyTorch vs TensorFlow) ===")
+    print(f"MAE:               {summary['mae']:.8f}")
+    print(f"Cosine similarity: {summary['cosine_similarity']:.8f}")
+    print(f"Cosine distance:   {summary['cosine_distance']:.8f}")
+
+
+if __name__ == "__main__":
+    main()
