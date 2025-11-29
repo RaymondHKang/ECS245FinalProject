@@ -5,34 +5,50 @@ from tensorflow import keras
 
 def sync_tf_to_torch(tf_model: keras.Model, torch_model: nn.Module) -> None:
     """
-    Copy weights from a simple Keras MLP into the equivalent PyTorch MLP.
+    Copy weights from a Keras MLP into an equivalent PyTorch MLP.
 
-    Assumes architecture:
-      TF: Input -> Dense(hidden, relu) -> Dense(output)
-      Torch: Linear(input, hidden) -> ReLU -> Linear(hidden, output)
+    Assumes:
+      - tf_model: built via create_tf_mlp
+      - torch_model: built via TorchMLP
+      - All Dense <-> Linear layers correspond in order.
+
+    We:
+      - Collect all Keras Dense layers (in order)
+      - Collect all PyTorch Linear modules (in order)
+      - For each pair:
+          torch.weight = tf.weight.T
+          torch.bias   = tf.bias
     """
+    # 1) Get all Dense layers (ignore Input, etc.)
+    tf_dense_layers = [
+        layer
+        for layer in tf_model.layers
+        if isinstance(layer, keras.layers.Dense)
+    ]
 
-    # Grab TF layers (ignore Input layer)
-    tf_dense_layers = [layer for layer in tf_model.layers if isinstance(layer, keras.layers.Dense)]
-    if len(tf_dense_layers) != 2:
-        raise ValueError(f"Expected exactly 2 Dense layers, got {len(tf_dense_layers)}")
+    # 2) Get all Linear layers in Torch (in order of appearance)
+    torch_linear_layers = [
+        m for m in torch_model.modules() if isinstance(m, nn.Linear)
+    ]
 
-    # Unpack TF params
-    tf_w1, tf_b1 = tf_dense_layers[0].get_weights()
-    tf_w2, tf_b2 = tf_dense_layers[1].get_weights()
+    if len(tf_dense_layers) != len(torch_linear_layers):
+        raise ValueError(
+            f"Mismatch in Dense/Linear layer count: "
+            f"TF has {len(tf_dense_layers)}, Torch has {len(torch_linear_layers)}"
+        )
 
-    # Grab Torch layers
-    torch_layers = [m for m in torch_model.modules() if isinstance(m, nn.Linear)]
-    if len(torch_layers) != 2:
-        raise ValueError(f"Expected exactly 2 Linear layers, got {len(torch_layers)}")
+    # 3) Copy all weights layer-by-layer
+    for tf_layer, torch_layer in zip(tf_dense_layers, torch_linear_layers):
+        tf_w, tf_b = tf_layer.get_weights()  # (in_features, out_features), (out_features,)
 
-    lin1, lin2 = torch_layers
+        # Keras Dense: (in_features, out_features)
+        # Torch Linear: (out_features, in_features)
+        tf_w_t = tf_w.T
 
-    # Keras Dense: (in_features, out_features)
-    # PyTorch Linear: (out_features, in_features)
-    with torch.no_grad():
-        lin1.weight.copy_(torch.from_numpy(tf_w1.T))  # transpose
-        lin1.bias.copy_(torch.from_numpy(tf_b1))
+        with torch.no_grad():
+            # Ensure dtype match
+            w_tensor = torch.from_numpy(tf_w_t).to(torch_layer.weight.dtype)
+            b_tensor = torch.from_numpy(tf_b).to(torch_layer.bias.dtype)
 
-        lin2.weight.copy_(torch.from_numpy(tf_w2.T))
-        lin2.bias.copy_(torch.from_numpy(tf_b2))
+            torch_layer.weight.copy_(w_tensor)
+            torch_layer.bias.copy_(b_tensor)
