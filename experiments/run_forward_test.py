@@ -7,30 +7,34 @@ from utils.reproducibility import load_yaml_config, set_global_seed
 from utils.compare_outputs import summarize_output_diff
 from models.torch_mlp import TorchMLP
 from models.tf_mlp import create_tf_mlp
+from utils.sync_weights import sync_tf_to_torch
 
 
-def align_weights_and_save(
-    torch_model: TorchMLP,
-    tf_model: tf.keras.Model,
-    weights_path: str,
-):
-    """Copy TF weights into PyTorch model and save them to an .npz file."""
-    tf_weights = tf_model.get_weights()
-    state_dict = torch_model.state_dict()
-    state_dict["fc1.weight"] = torch.from_numpy(tf_weights[0].T)
-    state_dict["fc1.bias"] = torch.from_numpy(tf_weights[1])
-    state_dict["fc2.weight"] = torch.from_numpy(tf_weights[2].T)
-    state_dict["fc2.bias"] = torch.from_numpy(tf_weights[3])
-    torch_model.load_state_dict(state_dict)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-    os.makedirs(os.path.dirname(weights_path), exist_ok=True)
-    np.savez(
-        weights_path,
-        tf_w0=tf_weights[0],
-        tf_b0=tf_weights[1],
-        tf_w1=tf_weights[2],
-        tf_b1=tf_weights[3],
-    )
+
+# def align_weights_and_save(
+#     torch_model: TorchMLP,
+#     tf_model: tf.keras.Model,
+#     weights_path: str,
+# ):
+#     """Copy TF weights into PyTorch model and save them to an .npz file."""
+#     tf_weights = tf_model.get_weights()
+#     state_dict = torch_model.state_dict()
+#     state_dict["fc1.weight"] = torch.from_numpy(tf_weights[0].T)
+#     state_dict["fc1.bias"] = torch.from_numpy(tf_weights[1])
+#     state_dict["fc2.weight"] = torch.from_numpy(tf_weights[2].T)
+#     state_dict["fc2.bias"] = torch.from_numpy(tf_weights[3])
+#     torch_model.load_state_dict(state_dict)
+
+#     os.makedirs(os.path.dirname(weights_path), exist_ok=True)
+#     np.savez(
+#         weights_path,
+#         tf_w0=tf_weights[0],
+#         tf_b0=tf_weights[1],
+#         tf_w1=tf_weights[2],
+#         tf_b1=tf_weights[3],
+#     )
 
 
 def main():
@@ -49,11 +53,7 @@ def main():
     tf_model = create_tf_mlp(input_dim, hidden_dim, output_dim)
     torch_model = TorchMLP(input_dim, hidden_dim, output_dim)
 
-    align_weights_and_save(
-        torch_model,
-        tf_model,
-        weights_cfg["synced_weights_path"],
-    )
+    sync_tf_to_torch(tf_model, torch_model)
 
     # synthetic input (also save to file once)
     os.makedirs(os.path.dirname(data_cfg["synthetic_inputs_path"]), exist_ok=True)
@@ -66,8 +66,10 @@ def main():
     x_torch = torch.from_numpy(x_np)
     x_tf = tf.convert_to_tensor(x_np)
 
-    torch_out = torch_model(x_torch).detach().numpy()
-    tf_out = tf_model(x_tf).numpy()
+    torch_model.eval()
+    with torch.no_grad():
+        torch_out = torch_model(x_torch).detach().numpy()
+    tf_out = tf_model(x_tf, training=False).numpy()
 
     summary = summarize_output_diff(torch_out, tf_out)
 

@@ -16,18 +16,18 @@ implemented in PyTorch and TensorFlow. It compares:
 - `tests/` – quick sanity checks for alignment/correctness
 
 ## Quickstart
-
+Python Version=3.11
 ```bash
 pip install -r requirements.txt
 
 # Run forward correctness test
-python experiments/run_forward_test.py
+python -m experiments.run_forward_test
 
 # Run performance benchmark
-python experiments/run_performance_test.py
+python -m experiments.run_performance_test
 
 # Run edge-case stability test
-python experiments/run_edge_case_test.py
+python -m experiments.run_edge_case_test
 
 # (Optional) run tests
 pytest

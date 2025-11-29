@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 import tensorflow as tf
@@ -6,6 +7,8 @@ from utils.reproducibility import load_yaml_config, set_global_seed
 from utils.edge_case_inputs import generate_edge_case_values, generate_edge_case_batch
 from models.torch_mlp import TorchMLP
 from models.tf_mlp import create_tf_mlp
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 def align_weights(torch_model: TorchMLP, tf_model: tf.keras.Model):
