@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import torch
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 
 from utils.reproducibility import load_yaml_config, set_global_seed
@@ -10,7 +12,7 @@ from models.tf_mlp import create_tf_mlp
 from utils.sync_weights import sync_tf_to_torch
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 
 
 # def align_weights_and_save(

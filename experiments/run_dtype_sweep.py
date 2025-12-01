@@ -3,6 +3,8 @@
 import os
 import numpy as np
 import torch
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 from tensorflow import keras
 
@@ -12,7 +14,6 @@ from utils.reproducibility import load_yaml_config, set_global_seed
 from utils.sync_weights import sync_tf_to_torch
 from utils.compare_outputs import summarize_output_diff
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 DTYPES = ["float32", "float64"]
 SEEDS = [0, 1, 2, 42]
