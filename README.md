@@ -238,6 +238,10 @@ python -m experiments.run_dtype_sweep
 ```bash
 python -m experiments.run_arch_activation_sweep
 ```
+### Gradient sweep
+```bash
+python -m experiments.run_gradient_sweep
+```
 ### Run tests
 ```bash
 pytest
