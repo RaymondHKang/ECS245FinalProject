@@ -1,31 +1,8 @@
 {
-  "name": "TF+Torch GPU",
+  "name": "TF+Torch CPU",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-
-  // Use all GPUs on the host
-  "runArgs": ["--gpus=all"],
-
-  // Where your project will live inside the container
   "workspaceFolder": "/workspaces/ECS245FinalProject"
-
-  // (Optional but nice) Explicitly mount the local folder
-  // "mounts": [
-  //   "source=${localWorkspaceFolder},target=/workspace,type=bind"
-  // ],
-
-  // // (Optional) Install VS Code extensions automatically for everyone
-  // "customizations": {
-  //   "vscode": {
-  //     "extensions": [
-  //       "ms-python.python",
-  //       "ms-toolsai.jupyter"
-  //     ]
-  //   }
-  // }
-
-  // You usually don't need postCreateCommand anymore,
-  // because dependencies are already installed in the image.
 }

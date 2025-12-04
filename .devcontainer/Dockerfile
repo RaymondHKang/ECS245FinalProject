@@ -1,12 +1,15 @@
 # .devcontainer/Dockerfile
-FROM nvcr.io/nvidia/tensorflow:24.12-tf2-py3
+FROM python:3.11-slim
 
-# Set a consistent workdir inside the container
+# System setup: you can trim this if you don't need build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+ && rm -rf /var/lib/apt/lists/*
+
+# Workdir inside container
 WORKDIR /workspaces/ECS245FinalProject
 
-# Install Python dependencies *during build* for reproducibility
+# Install Python deps at build time
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Optional: install extra OS tools you commonly need
-# RUN apt-get update && apt-get install -y git vim && rm -rf /var/lib/apt/lists/*
