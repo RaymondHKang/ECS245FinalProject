@@ -2,7 +2,7 @@
 FROM nvcr.io/nvidia/tensorflow:24.12-tf2-py3
 
 # Set a consistent workdir inside the container
-WORKDIR /workspace
+WORKDIR /workspaces/ECS245FinalProject
 
 # Install Python dependencies *during build* for reproducibility
 COPY requirements.txt .
