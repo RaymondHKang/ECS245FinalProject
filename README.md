@@ -204,6 +204,15 @@ This provides a comprehensive picture of framework agreement.
 ---
 
 # 4. Running the Experiments
+## 4.0 Environment Setup
+There are two ways to set up the environment:
+1. Open the project in Container using VSCode, and then it will set up everthing for you, or
+2. Use local environment, and install required python packages by:
+```bash
+pip install -r ./requirements.txt
+```
+
+---
 ## 4.1 Run Everything (Full Experiment Suite)
 To execute the entire differential testing pipeline — including forward tests, performance profiling, edge-case analysis, architecture sweeps, dtype sweeps, and gradient sweeps:
 ```bash
