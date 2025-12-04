@@ -9,7 +9,7 @@
   "runArgs": ["--gpus=all"],
 
   // Where your project will live inside the container
-  "workspaceFolder": "/workspace"
+  "workspaceFolder": "/workspaces/ECS245FinalProject"
 
   // (Optional but nice) Explicitly mount the local folder
   // "mounts": [
