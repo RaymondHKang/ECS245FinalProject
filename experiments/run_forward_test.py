@@ -11,34 +11,6 @@ from models.torch_mlp import TorchMLP
 from models.tf_mlp import create_tf_mlp
 from utils.sync_weights import sync_tf_to_torch
 
-
-
-
-
-# def align_weights_and_save(
-#     torch_model: TorchMLP,
-#     tf_model: tf.keras.Model,
-#     weights_path: str,
-# ):
-#     """Copy TF weights into PyTorch model and save them to an .npz file."""
-#     tf_weights = tf_model.get_weights()
-#     state_dict = torch_model.state_dict()
-#     state_dict["fc1.weight"] = torch.from_numpy(tf_weights[0].T)
-#     state_dict["fc1.bias"] = torch.from_numpy(tf_weights[1])
-#     state_dict["fc2.weight"] = torch.from_numpy(tf_weights[2].T)
-#     state_dict["fc2.bias"] = torch.from_numpy(tf_weights[3])
-#     torch_model.load_state_dict(state_dict)
-
-#     os.makedirs(os.path.dirname(weights_path), exist_ok=True)
-#     np.savez(
-#         weights_path,
-#         tf_w0=tf_weights[0],
-#         tf_b0=tf_weights[1],
-#         tf_w1=tf_weights[2],
-#         tf_b1=tf_weights[3],
-#     )
-
-
 def main():
     cfg = load_yaml_config("config/settings.yaml")
     set_global_seed(cfg["seed"])

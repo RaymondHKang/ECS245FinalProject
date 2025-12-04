@@ -9,17 +9,7 @@ from utils.reproducibility import load_yaml_config, set_global_seed
 from utils.measure_perf import time_forward_pass, measure_memory_for_call
 from models.torch_mlp import TorchMLP
 from models.tf_mlp import create_tf_mlp
-
-
-def align_weights(torch_model: TorchMLP, tf_model: tf.keras.Model):
-    tf_weights = tf_model.get_weights()
-    state_dict = torch_model.state_dict()
-    state_dict["fc1.weight"] = torch.from_numpy(tf_weights[0].T)
-    state_dict["fc1.bias"] = torch.from_numpy(tf_weights[1])
-    state_dict["fc2.weight"] = torch.from_numpy(tf_weights[2].T)
-    state_dict["fc2.bias"] = torch.from_numpy(tf_weights[3])
-    torch_model.load_state_dict(state_dict)
-
+from utils.sync_weights import sync_tf_to_torch
 
 def main():
     cfg = load_yaml_config("config/settings.yaml")
@@ -37,7 +27,7 @@ def main():
 
     tf_model = create_tf_mlp(input_dim, hidden_dim, output_dim)
     torch_model = TorchMLP(input_dim, hidden_dim, output_dim)
-    align_weights(torch_model, tf_model)
+    sync_tf_to_torch(tf_model, torch_model)
 
     x_np = np.random.rand(batch_size, input_dim).astype(np.float32)
     x_torch = torch.from_numpy(x_np)
